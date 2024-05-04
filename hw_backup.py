@@ -1,5 +1,8 @@
 import requests
 from datetime import datetime
+import time
+from tqdm import tqdm
+
 
 vk_user_id = input('Введите id пользователя VK: ')
 vk_token = input('Введите токен VK: ')  # 27147356
