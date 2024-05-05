@@ -4,10 +4,12 @@ from datetime import datetime
 from tqdm import tqdm
 from tqdm.utils import CallbackIOWrapper
 
+
+vk_token = input('Введите токен VK: ')
+yandex_token = input('Введите Яндекс токен: ')  
+
 vk_user_id = input('Введите id пользователя VK: ')
-vk_token = input('Введите токен VK: ')  # 27147356
 image_count = input('Введите количество скачиваемых фото: ')
-yandex_token = input('Введите Яндекс токен: ')  # y0_AgAAAABWwuc2AADLWwAAAAECe4dYAACZsRUTcNVB3YLb3DRuzY8QW3JeoQ
 
 dict_photos = {}
 
