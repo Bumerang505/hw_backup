@@ -1,14 +1,13 @@
+import os
 import requests
 from datetime import datetime
-import time
 from tqdm import tqdm
-
+from tqdm.utils import CallbackIOWrapper
 
 vk_user_id = input('Введите id пользователя VK: ')
 vk_token = input('Введите токен VK: ')  # 27147356
 image_count = input('Введите количество скачиваемых фото: ')
 yandex_token = input('Введите Яндекс токен: ')  # y0_AgAAAABWwuc2AADLWwAAAAECe4dYAACZsRUTcNVB3YLb3DRuzY8QW3JeoQ
-
 
 dict_photos = {}
 
@@ -37,13 +36,13 @@ def vk_get_big_size_photos(vk_id, vk_access_token):
                 f_json.write(f'[{{\n"file_name": "{name}.jpg",\n"size": "{image["sizes"][-1]["type"]}"\n}}]')
 
 
-vk_get_big_size_photos(vk_user_id, vk_token)
-
-
 def download_image(url, file_name):
-    response = requests.get(url)
-    with open(file_name, 'wb') as file:
-        file.write(response.content)
+    response = requests.get(url, stream=True)
+
+    with tqdm.wrapattr(open(file_name, 'wb'), 'write', desc=f'Скачиваем {file_name} из VK',
+                       miniters=0.2, total=int(response.headers.get('content-length', 0))) as file:
+        for chunk in response.iter_content(chunk_size=4096):
+            file.write(chunk)
 
 
 def create_folder_yandex(ya_token):
@@ -69,11 +68,18 @@ def get_url_for_write_ya_disk(ya_token, file_name):
     return response.json()['href']
 
 
+def add_images_to_ya_disk():
+    for f_name, f_url in dict_photos.items():
+        download_image(f_url, f'{f_name}.jpg')
+        get_url_for_write_ya_disk(yandex_token, f_name)
+
+        with open(f'{f_name}.jpg', 'rb') as f:
+            with tqdm(total=os.stat(f'{f_name}.jpg').st_size, unit="B", unit_scale=True, unit_divisor=1024,
+                      desc=f'Загружаем {f_name}.jpg на Яндекс.Диск') as t:
+                wrapped_file = CallbackIOWrapper(t.update, f, "read")
+                requests.put(get_url_for_write_ya_disk(yandex_token, f_name), data=wrapped_file)
+
+
+vk_get_big_size_photos(vk_user_id, vk_token)
 create_folder_yandex(yandex_token)
-
-for f_name, f_url in dict_photos.items():
-    download_image(f_url, f'{f_name}.jpg')
-    get_url_for_write_ya_disk(yandex_token, f_name)
-
-    with open(f'{f_name}.jpg', 'rb') as f:
-        requests.put(get_url_for_write_ya_disk(yandex_token, f_name), files={'file': f})
+add_images_to_ya_disk()
